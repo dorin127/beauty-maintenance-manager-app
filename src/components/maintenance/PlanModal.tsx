@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import type { MaintenancePlan } from '@/lib/types'
 import { StatusBadge } from './StatusBadge'
-import { completePlan, skipPlan, deletePlan, deleteSeriesPlanned } from '@/lib/planActions'
+import {
+  completePlan,
+  skipPlan,
+  updatePlanDate,
+  deletePlan,
+  deleteSeriesPlanned,
+} from '@/lib/planActions'
+
+type Section = null | 'editDate' | 'delete'
 
 interface Props {
   plan: MaintenancePlan | null
@@ -14,9 +22,10 @@ interface Props {
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const today = new Date().toLocaleDateString('sv-SE')
   const [completedDate, setCompletedDate] = useState(today)
-  const [loading, setLoading] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-  const [showDelete, setShowDelete] = useState(false)
+  const [editDate, setEditDate]           = useState('')
+  const [section, setSection]             = useState<Section>(null)
+  const [loading, setLoading]             = useState(false)
+  const [err, setErr]                     = useState<string | null>(null)
 
   if (!plan) return null
 
@@ -33,6 +42,11 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
       setErr(e instanceof Error ? e.message : '不明なエラー')
       setLoading(false)
     }
+  }
+
+  function openEditDate() {
+    setEditDate(plan!.planned_date)
+    setSection('editDate')
   }
 
   return (
@@ -64,8 +78,8 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
           <p className="text-sm text-red-500 mb-3 bg-red-50 rounded-lg px-3 py-2">{err}</p>
         )}
 
-        {/* 計画中の場合：操作ボタン */}
-        {plan.status === 'planned' && (
+        {/* ── 計画中の操作 ── */}
+        {plan.status === 'planned' && section === null && (
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">実施日</label>
@@ -76,7 +90,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                 className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-xs text-gray-400 mt-1">
-                次回予定は実施日 + {plan.interval_months}ヶ月で自動更新されます
+                次回予定は実施日 + {plan.interval_months}ヶ月で自動更新
               </p>
             </div>
             <button
@@ -89,14 +103,87 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
             <button
               onClick={() => run(() => skipPlan(plan.id))}
               disabled={loading}
-              className="w-full border border-gray-200 text-gray-500 font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+              className="w-full border border-gray-200 text-gray-600 font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
             >
               スキップする
+            </button>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={openEditDate}
+                className="flex-1 text-xs text-gray-400 hover:text-primary transition-colors py-1"
+              >
+                日程を変更する ›
+              </button>
+              <button
+                onClick={() => setSection('delete')}
+                className="flex-1 text-xs text-gray-400 hover:text-red-400 transition-colors py-1"
+              >
+                削除する ›
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 日程変更フォーム ── */}
+        {plan.status === 'planned' && section === 'editDate' && (
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">新しい予定日</label>
+            <input
+              type="date"
+              value={editDate}
+              onChange={e => setEditDate(e.target.value)}
+              className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => run(() => updatePlanDate(plan.id, editDate))}
+                disabled={loading || !editDate}
+                className="flex-1 bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
+              >
+                {loading ? '更新中...' : '変更する'}
+              </button>
+              <button
+                onClick={() => setSection(null)}
+                className="flex-1 border border-gray-200 text-gray-500 font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                戻る
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 削除セクション ── */}
+        {section === 'delete' && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-400 text-center mb-3">削除方法を選んでください</p>
+            <button
+              onClick={() => run(() => deletePlan(plan.id))}
+              disabled={loading}
+              className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+            >
+              この計画だけ削除
+            </button>
+            <button
+              onClick={() => run(() => deleteSeriesPlanned(plan.series_id, plan.planned_date))}
+              disabled={loading}
+              className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+            >
+              以降の計画をすべて削除
+              <span className="block text-xs font-normal text-gray-400 mt-0.5">
+                実施済みの記録は残ります
+              </span>
+            </button>
+            <button
+              onClick={() => setSection(null)}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
+            >
+              戻る
             </button>
           </div>
         )}
 
-        {/* 実施済み・スキップの場合 */}
+        {/* ── 実施済み・スキップ済みの表示 ── */}
         {plan.status !== 'planned' && (
           <div className="text-center text-sm text-gray-400 py-2">
             {plan.status === 'completed'
@@ -105,46 +192,9 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
           </div>
         )}
 
-        {/* 削除セクション */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          {!showDelete ? (
-            <button
-              onClick={() => setShowDelete(true)}
-              className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors"
-            >
-              削除する...
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-gray-400 text-center mb-2">削除方法を選んでください</p>
-              <button
-                onClick={() => run(() => deletePlan(plan.id))}
-                disabled={loading}
-                className="w-full border border-red-200 text-red-500 text-sm font-medium py-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
-              >
-                この計画だけ削除
-              </button>
-              <button
-                onClick={() => run(() => deleteSeriesPlanned(plan.series_id, plan.planned_date))}
-                disabled={loading}
-                className="w-full border border-red-200 text-red-500 text-sm font-medium py-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
-              >
-                以降の計画をすべて削除
-                <span className="block text-xs font-normal text-gray-400">実施済みの記録は残ります</span>
-              </button>
-              <button
-                onClick={() => setShowDelete(false)}
-                className="w-full text-xs text-gray-400"
-              >
-                キャンセル
-              </button>
-            </div>
-          )}
-        </div>
-
         <button
           onClick={onClose}
-          className="mt-3 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          className="mt-4 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           閉じる
         </button>

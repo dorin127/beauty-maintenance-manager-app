@@ -6,18 +6,18 @@ interface Props {
   month: number
   plans: MaintenancePlan[]
   onPlanClick: (plan: MaintenancePlan) => void
+  conflictDays?: Set<number>
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
 
-export function CalendarGrid({ year, month, plans, onPlanClick }: Props) {
+export function CalendarGrid({ year, month, plans, onPlanClick, conflictDays }: Props) {
   const firstWeekday = new Date(year, month - 1, 1).getDay()
-  const daysInMonth = new Date(year, month, 0).getDate()
+  const daysInMonth  = new Date(year, month, 0).getDate()
 
   const plansByDay = plans.reduce<Record<number, MaintenancePlan[]>>((acc, plan) => {
     const day = parseInt(plan.planned_date.split('-')[2])
-    if (!acc[day]) acc[day] = []
-    acc[day].push(plan)
+    ;(acc[day] ??= []).push(plan)
     return acc
   }, {})
 
@@ -27,8 +27,8 @@ export function CalendarGrid({ year, month, plans, onPlanClick }: Props) {
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const todayStr = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD
-  const isToday = (day: number) =>
+  const todayStr = new Date().toLocaleDateString('sv-SE')
+  const isToday  = (day: number) =>
     todayStr === `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
   return (
@@ -58,17 +58,23 @@ export function CalendarGrid({ year, month, plans, onPlanClick }: Props) {
           >
             {day !== null && (
               <>
-                <span
-                  className={`text-xs block text-right mb-1 ${
-                    idx % 7 === 0
-                      ? 'text-red-400'
-                      : idx % 7 === 6
-                      ? 'text-blue-400'
-                      : 'text-gray-600'
-                  } ${isToday(day) ? 'font-bold text-primary' : ''}`}
-                >
-                  {day}
-                </span>
+                <div className="flex items-center justify-between mb-1">
+                  <span
+                    className={`text-xs ${
+                      idx % 7 === 0 ? 'text-red-400' : idx % 7 === 6 ? 'text-blue-400' : 'text-gray-600'
+                    } ${isToday(day) ? 'font-bold text-primary' : ''}`}
+                  >
+                    {day}
+                  </span>
+                  {conflictDays?.has(day) && (
+                    <span
+                      title="同日に禁止処理の組み合わせがあります"
+                      className="text-[11px] text-amber-500 leading-none"
+                    >
+                      ⚠
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-0.5">
                   {(plansByDay[day] ?? []).map(plan => (
                     <button

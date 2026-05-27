@@ -65,6 +65,17 @@ export async function skipPlan(planId: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/** 計画中の予定日を変更 */
+export async function updatePlanDate(planId: string, newDate: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('maintenance_plans')
+    .update({ planned_date: newDate })
+    .eq('id', planId)
+    .eq('status', 'planned')
+  if (error) throw new Error(error.message)
+}
+
 /** この計画1件だけ削除 */
 export async function deletePlan(planId: string): Promise<void> {
   const supabase = createClient()
