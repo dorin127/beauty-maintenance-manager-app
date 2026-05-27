@@ -4,22 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-**美容メンテ マネージャーアプリ** — ユーザーが美容に関するメンテナンス（スキンケア、ヘアケア、ネイルなど）の記録・管理・リマインダーを行うためのWebアプリ。
+**美容メンテ マネージャー** — アラフィフ女性向けの美容メンテナンス計画・管理アプリ。ボトックス・ヒアルロン酸・ハイフなどのメンテナンスを入力すると、1年分の繰り返し計画を自動生成する。
 
 ## 技術スタック
 
-- **HTML / CSS / JavaScript**（バニラ、フレームワーク・ライブラリなし）
-- バックエンドなし。データは `localStorage` で永続化する想定。
+- **Next.js** (App Router, TypeScript)
+- **Supabase** (PostgreSQL)
+- **Tailwind CSS v4** — `globals.css` の `@theme` ブロックで色/フォントを定義（`tailwind.config.ts` は存在しない）
+- **Noto Sans JP** — `next/font/google` で `--font-noto-sans-jp` 変数として読み込み
 
-## 開発の進め方
+## 開発コマンド
 
-ブラウザで直接 `index.html` を開いて動作確認する（ビルドステップ不要）。
+```bash
+npm run dev      # 開発サーバー (http://localhost:3000)
+npm run build    # ビルド
+npm run lint     # ESLint
+```
 
-ライブリロードが必要な場合は VS Code の **Live Server** 拡張を使う。
+初回セットアップ: `.env.local.example` を `.env.local` にコピーし、SupabaseのURLとanon keyを設定する。
 
-## アーキテクチャ方針
+## 画面構成
 
-- 単一ページアプリ（SPA ライク）として構成し、画面切り替えは DOM の表示/非表示で制御する。
-- JS はモジュール分割（`<script type="module">`）を使い、機能ごとにファイルを分ける。
-- スタイルはカスタムプロパティ（CSS変数）でテーマカラーを管理する。
-- データモデル（メンテ記録、カテゴリ、リマインダーなど）は `localStorage` の読み書きを担う専用モジュールに集約する。
+| パス | 画面 | コンポーネント |
+|------|------|---------------|
+| `/monthly` | 月間カレンダー（デフォルト） | `MonthlyView` |
+| `/annual` | 年間カレンダー | `AnnualView` |
+| `/input` | メンテナンス計画の入力 | `MaintenanceForm` |
+
+`/` は `/monthly` へリダイレクト。
+
+## デザイントーン（湘南美容外科カラー）
+
+`globals.css` の `@theme` ブロックで定義。Tailwindクラスとして使用可能：
+
+| トークン | 値 | 用途 |
+|---------|-----|------|
+| `primary` | `#E4007F` | メインピンク（ボタン・見出し） |
+| `primary-light` | `#FFE4F2` | 選択状態・背景 |
+| `primary-dark` | `#B5005F` | ホバー状態 |
+| `surface` | `#FFF5FA` | ページ背景 |
+| `border-pink` | `#F0D0E8` | カード・入力枠のボーダー |
+
+## ビジネスロジック (`src/lib/schedule.ts`)
+
+- **`generateSeriesPlans(input, seriesId?)`**: 初回日付から12ヶ月先まで繰り返し計画を生成。同一シリーズは共通の `series_id` を持つ。
+- **`calcNextDate(completedDate, intervalMonths)`**: 実施完了時に `completed_date + interval_months` で次の予定日を算出。将来計画の再計算に使用。
+- **禁止処理警告**: `maintenance_menus.prohibited_with[]` に同日追加しようとしたメニューが含まれる場合に警告表示する（実装予定）。
+
+## DB 構成 (`supabase/migrations/0001_initial_schema.sql`)
+
+- `maintenance_menus`: メニューマスタ。シードデータに代表的な美容メニュー9件が含まれる。
+- `maintenance_plans`: 計画レコード。`status` は `planned` / `completed` / `skipped`。
+- `series_id` で繰り返しシリーズを紐付け。
+
+## 将来の拡張
+
+- Google Calendar 連携（`planned_date` → Google Event）

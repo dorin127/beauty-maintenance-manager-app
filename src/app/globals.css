@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #E4007F;
+  --color-primary-light: #FFE4F2;
+  --color-primary-dark: #B5005F;
+  --color-surface: #FFF5FA;
+  --color-border-pink: #F0D0E8;
+  --font-sans: var(--font-noto-sans-jp), "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: #1a1a1a;
+}
