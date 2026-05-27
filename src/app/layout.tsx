@@ -1,14 +1,6 @@
 import type { Metadata } from 'next'
-import { Noto_Sans_JP } from 'next/font/google'
 import { Header } from '@/components/layout/Header'
 import './globals.css'
-
-const notoSansJP = Noto_Sans_JP({
-  variable: '--font-noto-sans-jp',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '700'],
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: '美容メンテ マネージャー',
@@ -21,7 +13,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ja" className={notoSansJP.variable}>
+    <html lang="ja">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+        />
+      </head>
       <body className="min-h-screen bg-surface font-sans">
         <Header />
         <main>{children}</main>
