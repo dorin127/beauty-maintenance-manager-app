@@ -1,5 +1,10 @@
+import { Suspense } from 'react'
 import { AnnualView } from '@/components/calendar/AnnualView'
 
 export default function AnnualPage() {
-  return <AnnualView />
+  return (
+    <Suspense>
+      <AnnualView />
+    </Suspense>
+  )
 }

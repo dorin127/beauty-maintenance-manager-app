@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAnnualPlans } from '@/hooks/usePlans'
 import { StatusBadge } from '@/components/maintenance/StatusBadge'
@@ -16,13 +16,20 @@ function groupByMonth(plans: MaintenancePlan[]): Record<number, MaintenancePlan[
 }
 
 export function AnnualView() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
+
+  const year = parseInt(searchParams.get('year') ?? '') || now.getFullYear()
   const { plans, loading } = useAnnualPlans(year)
 
-  const byMonth = groupByMonth(plans)
-  const totalPlanned   = plans.filter(p => p.status === 'planned').length
-  const totalCompleted = plans.filter(p => p.status === 'completed').length
+  const byMonth      = groupByMonth(plans)
+  const totalPlanned = plans.filter(p => p.status === 'planned').length
+  const totalDone    = plans.filter(p => p.status === 'completed').length
+
+  function go(y: number) {
+    router.push(`/annual?year=${y}`)
+  }
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-6">
@@ -32,25 +39,25 @@ export function AnnualView() {
           <h2 className="text-2xl font-bold text-primary">{year}年 年間計画</h2>
           {!loading && (
             <p className="text-sm text-gray-400 mt-0.5">
-              計画中 {totalPlanned}件 / 実施済 {totalCompleted}件
+              計画中 {totalPlanned}件 / 実施済 {totalDone}件
             </p>
           )}
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setYear(y => y - 1)}
+            onClick={() => go(year - 1)}
             className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
           >
             ＜ 前年
           </button>
           <button
-            onClick={() => setYear(now.getFullYear())}
+            onClick={() => go(now.getFullYear())}
             className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
           >
             今年
           </button>
           <button
-            onClick={() => setYear(y => y + 1)}
+            onClick={() => go(year + 1)}
             className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
           >
             次年 ＞
@@ -61,17 +68,17 @@ export function AnnualView() {
       {/* 12ヶ月グリッド */}
       <div className="grid grid-cols-3 gap-4">
         {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
-          const monthPlans = byMonth[m] ?? []
+          const monthPlans    = byMonth[m] ?? []
           const isCurrentMonth = year === now.getFullYear() && m === now.getMonth() + 1
+          const isPast         = year < now.getFullYear() || (year === now.getFullYear() && m < now.getMonth() + 1)
 
           return (
             <Link
               key={m}
-              href="/monthly"
-              onClick={() => {}}
+              href={`/monthly?year=${year}&month=${m}`}
               className={`bg-white rounded-xl border p-4 hover:shadow-sm transition-shadow block ${
                 isCurrentMonth ? 'border-primary border-2' : 'border-border-pink'
-              }`}
+              } ${isPast && !isCurrentMonth ? 'opacity-70' : ''}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <p className={`font-semibold ${isCurrentMonth ? 'text-primary' : 'text-gray-700'}`}>
@@ -106,6 +113,19 @@ export function AnnualView() {
           )
         })}
       </div>
+
+      {/* 空状態 */}
+      {!loading && plans.length === 0 && (
+        <div className="text-center mt-8">
+          <p className="text-gray-400 mb-3">この年の計画はまだありません</p>
+          <Link
+            href="/input"
+            className="inline-block bg-primary text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            ＋ 計画を追加する
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
