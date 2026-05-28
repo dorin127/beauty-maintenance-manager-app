@@ -26,8 +26,7 @@ interface Props {
 }
 
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
-  const today = new Date().toLocaleDateString('sv-SE')
-  const [completedDate, setCompletedDate] = useState(today)
+  const [completedDate, setCompletedDate] = useState(plan?.planned_date ?? new Date().toLocaleDateString('sv-SE'))
   const [editDate, setEditDate]           = useState('')
   const [section, setSection]             = useState<Section>(null)
   const [loading, setLoading]             = useState(false)
