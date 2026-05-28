@@ -1,6 +1,17 @@
 import { createClient } from './supabase/client'
-import { generateSeriesPlans, calcNextDate, parseDate, formatDate } from './schedule'
+import { generateSeriesPlans, calcNextWeekdayAligned, addMonths, parseDate, formatDate } from './schedule'
 import type { NewPlanInput, MaintenancePlan } from './types'
+
+type PlanInsert = {
+  menu_id: string | null
+  menu_name: string
+  planned_date: string
+  interval_months: number
+  status: 'planned'
+  completed_date: null
+  notes: string | null
+  series_id: string
+}
 
 export async function createPlanSeries(input: NewPlanInput): Promise<void> {
   const supabase = createClient()
@@ -10,49 +21,63 @@ export async function createPlanSeries(input: NewPlanInput): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/**
+ * 実施済みにする。
+ * - planned_date を実施日に更新（カレンダー上の表示を実際の日付へ移動）
+ * - 以降の計画を baseForFuture の曜日・位置で再生成する
+ * @param baseForFuture 未指定なら completedDate（実施日基準）。
+ *                      plan.planned_date を渡すと元の曜日基準で再生成。
+ */
 export async function completePlan(
   plan: MaintenancePlan,
-  completedDate: string
+  completedDate: string,
+  baseForFuture?: string
 ): Promise<void> {
   const supabase = createClient()
+  const originalPlannedDate = plan.planned_date
+  const base = baseForFuture ?? completedDate
 
+  // 1. 現在の計画を実施済みに更新（planned_date も実施日へ移動）
   const { error } = await supabase
     .from('maintenance_plans')
-    .update({ status: 'completed', completed_date: completedDate })
+    .update({ status: 'completed', completed_date: completedDate, planned_date: completedDate })
     .eq('id', plan.id)
   if (error) throw new Error(error.message)
 
-  // 同シリーズの次の計画を取得
-  const { data: nextPlans } = await supabase
+  // 2. 同シリーズの以降の計画をすべて削除（元の planned_date より後）
+  const { error: delErr } = await supabase
     .from('maintenance_plans')
-    .select('*')
+    .delete()
     .eq('series_id', plan.series_id)
     .eq('status', 'planned')
-    .gt('planned_date', plan.planned_date)
-    .order('planned_date')
-    .limit(1)
+    .gt('planned_date', originalPlannedDate)
+  if (delErr) throw new Error(delErr.message)
 
-  const nextDate    = calcNextDate(parseDate(completedDate), plan.interval_months)
-  const nextDateStr = formatDate(nextDate)
+  // 3. base 日付から12ヶ月先まで再生成
+  const cutoff   = addMonths(new Date(), 12)
+  const baseDate = parseDate(base)
+  const newPlans: PlanInsert[] = []
 
-  if (nextPlans && nextPlans.length > 0) {
-    // 次の計画日を実施日ベースで更新
-    await supabase
-      .from('maintenance_plans')
-      .update({ planned_date: nextDateStr })
-      .eq('id', nextPlans[0].id)
-  } else {
-    // 12ヶ月圏外 → 次の計画を新規作成
-    await supabase.from('maintenance_plans').insert({
+  let step = 1
+  let next = calcNextWeekdayAligned(baseDate, plan.interval_months * step)
+  while (next <= cutoff) {
+    newPlans.push({
       menu_id:         plan.menu_id,
       menu_name:       plan.menu_name,
-      planned_date:    nextDateStr,
+      planned_date:    formatDate(next),
       interval_months: plan.interval_months,
       status:          'planned',
       completed_date:  null,
-      notes:           null,
+      notes:           plan.notes ?? null,
       series_id:       plan.series_id,
     })
+    step++
+    next = calcNextWeekdayAligned(baseDate, plan.interval_months * step)
+  }
+
+  if (newPlans.length > 0) {
+    const { error: insErr } = await supabase.from('maintenance_plans').insert(newPlans)
+    if (insErr) throw new Error(insErr.message)
   }
 }
 

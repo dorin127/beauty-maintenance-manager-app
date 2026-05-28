@@ -11,7 +11,13 @@ import {
   deleteSeriesPlanned,
 } from '@/lib/planActions'
 
-type Section = null | 'editDate' | 'delete'
+type Section = null | 'editDate' | 'delete' | 'weekdayChoice'
+
+const WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土']
+function weekdayOf(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return WEEKDAY_JA[new Date(y, m - 1, d).getDay()] + '曜'
+}
 
 interface Props {
   plan: MaintenancePlan | null
@@ -47,6 +53,15 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
   function openEditDate() {
     setEditDate(plan!.planned_date)
     setSection('editDate')
+  }
+
+  function handleComplete() {
+    if (completedDate !== plan!.planned_date) {
+      // 実施日と予定日が異なる場合は曜日選択へ
+      setSection('weekdayChoice')
+    } else {
+      run(() => completePlan(plan!, completedDate))
+    }
   }
 
   return (
@@ -94,11 +109,11 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               </p>
             </div>
             <button
-              onClick={() => run(() => completePlan(plan, completedDate))}
+              onClick={handleComplete}
               disabled={loading}
               className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
             >
-              {loading ? '更新中...' : '実施済みにする'}
+              実施済みにする
             </button>
             <button
               onClick={() => run(() => skipPlan(plan.id))}
@@ -122,6 +137,36 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                 削除する ›
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── 曜日選択（実施日≠予定日のとき） ── */}
+        {plan.status === 'planned' && section === 'weekdayChoice' && (
+          <div className="space-y-3">
+            <div className="bg-surface rounded-lg px-3 py-2 text-sm text-gray-600 text-center">
+              <p>予定日（{weekdayOf(plan.planned_date)}）と異なる日に実施しました。</p>
+              <p className="mt-1">今後の計画はどちらの曜日にしますか？</p>
+            </div>
+            <button
+              onClick={() => run(() => completePlan(plan, completedDate, completedDate))}
+              disabled={loading}
+              className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
+            >
+              {loading ? '更新中...' : `今後も${weekdayOf(completedDate)}にする（実施日基準）`}
+            </button>
+            <button
+              onClick={() => run(() => completePlan(plan, completedDate, plan.planned_date))}
+              disabled={loading}
+              className="w-full border border-primary text-primary font-medium py-2.5 rounded-lg hover:bg-primary-light transition-colors disabled:opacity-60"
+            >
+              {loading ? '更新中...' : `元の${weekdayOf(plan.planned_date)}に戻す`}
+            </button>
+            <button
+              onClick={() => setSection(null)}
+              className="w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
+            >
+              戻る
+            </button>
           </div>
         )}
 
