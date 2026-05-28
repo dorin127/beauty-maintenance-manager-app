@@ -8,6 +8,7 @@ import { CalendarGrid } from './CalendarGrid'
 import { PlanModal } from '@/components/maintenance/PlanModal'
 import { PlanCard } from '@/components/maintenance/PlanCard'
 import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
+import { MenuManageModal } from '@/components/maintenance/MenuManageModal'
 import type { MaintenancePlan } from '@/lib/types'
 
 export function MonthlyView() {
@@ -18,8 +19,9 @@ export function MonthlyView() {
   const year  = parseInt(searchParams.get('year')  ?? '') || now.getFullYear()
   const month = parseInt(searchParams.get('month') ?? '') || now.getMonth() + 1
 
-  const [selectedPlan, setSelectedPlan] = useState<MaintenancePlan | null>(null)
-  const [inputDate, setInputDate]       = useState<string | null>(null)
+  const [selectedPlan, setSelectedPlan]     = useState<MaintenancePlan | null>(null)
+  const [inputDate, setInputDate]           = useState<string | null>(null)
+  const [showMenuManage, setShowMenuManage] = useState(false)
   const { plans, loading, refetch } = useMonthlyPlans(year, month)
   const { menus }                   = useMenus()
 
@@ -142,10 +144,10 @@ export function MonthlyView() {
             )}
           </div>
           <button
-            onClick={() => setInputDate(new Date().toLocaleDateString('sv-SE'))}
-            className="text-xs text-primary hover:underline"
+            onClick={() => setShowMenuManage(true)}
+            className="text-xs text-gray-500 hover:text-primary transition-colors"
           >
-            ＋ 計画を追加
+            メニュー管理 ›
           </button>
         </div>
 
@@ -172,6 +174,10 @@ export function MonthlyView() {
         onClose={() => setSelectedPlan(null)}
         onUpdated={refetch}
       />
+
+      {showMenuManage && (
+        <MenuManageModal onClose={() => setShowMenuManage(false)} />
+      )}
 
       {inputDate && (
         <div
