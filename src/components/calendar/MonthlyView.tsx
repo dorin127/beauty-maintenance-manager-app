@@ -126,8 +126,8 @@ export function MonthlyView() {
         <div className="flex items-center justify-between mt-3 px-1">
           <div className="flex gap-4">
             {[
-              { color: 'bg-sky-100 border-sky-200',   label: '計画中' },
-              { color: 'bg-rose-400 border-rose-300', label: '実施済' },
+              { color: 'bg-rose-50 border-rose-300',  label: '計画中' },
+              { color: 'bg-rose-400 border-rose-400', label: '実施済' },
               { color: 'bg-gray-100 border-gray-200', label: 'スキップ' },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
