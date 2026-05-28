@@ -10,7 +10,7 @@ import {
   cancelReservation,
   skipPlan,
   updatePlanDate,
-  updateAmount,
+  updateCompletedPlan,
   deletePlan,
   deleteSeriesPlanned,
 } from '@/lib/planActions'
@@ -32,6 +32,8 @@ interface Props {
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const [completedDate, setCompletedDate] = useState(plan?.planned_date ?? new Date().toLocaleDateString('sv-SE'))
   const [amountStr, setAmountStr]         = useState(plan?.amount?.toString() ?? '')
+  // 実施済み編集用
+  const [editCompletedDate, setEditCompletedDate] = useState(plan?.completed_date ?? plan?.planned_date ?? '')
   const [editDate, setEditDate]           = useState('')
   const [section, setSection]             = useState<Section>(null)
   const [loading, setLoading]             = useState(false)
@@ -358,32 +360,40 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
           <div className="space-y-3 py-1">
             {plan.status === 'completed' ? (
               <>
-                <p className="text-center text-sm text-gray-400">
-                  実施日：{plan.completed_date?.replace(/-/g, '/')}
-                </p>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">金額</label>
-                  <div className="flex gap-2 items-center">
-                    <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={amountStr}
-                        onChange={e => setAmountStr(e.target.value)}
-                        placeholder="例：15000"
-                        className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <button
-                      onClick={() => run(() => updateAmount(plan.id, amountStr !== '' ? parseInt(amountStr, 10) : null))}
-                      disabled={loading}
-                      className="shrink-0 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
-                    >
-                      {loading ? '...' : '保存'}
-                    </button>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">実施日</label>
+                  <input
+                    type="date"
+                    value={editCompletedDate}
+                    onChange={e => setEditCompletedDate(e.target.value)}
+                    className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">金額（任意）</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={amountStr}
+                      onChange={e => setAmountStr(e.target.value)}
+                      placeholder="例：15000"
+                      className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
                   </div>
                 </div>
+                <button
+                  onClick={() => run(() => updateCompletedPlan(
+                    plan.id,
+                    editCompletedDate,
+                    amountStr !== '' ? parseInt(amountStr, 10) : null
+                  ))}
+                  disabled={loading || !editCompletedDate}
+                  className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
+                >
+                  {loading ? '保存中...' : '保存する'}
+                </button>
               </>
             ) : (
               <p className="text-center text-sm text-gray-400">スキップ済み</p>
