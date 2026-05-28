@@ -167,6 +167,7 @@ export function MonthlyView() {
       </div>
 
       <PlanModal
+        key={selectedPlan?.id}
         plan={selectedPlan}
         onClose={() => setSelectedPlan(null)}
         onUpdated={refetch}
