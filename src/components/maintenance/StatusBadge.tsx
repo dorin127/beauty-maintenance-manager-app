@@ -1,8 +1,8 @@
 import type { PlanStatus } from '@/lib/types'
 
 const config: Record<PlanStatus, { label: string; className: string }> = {
-  planned:   { label: '計画中', className: 'bg-blue-100 text-blue-700' },
-  completed: { label: '実施済', className: 'bg-red-100 text-red-600' },
+  planned:   { label: '計画中', className: 'bg-sky-100 text-sky-700' },
+  completed: { label: '実施済', className: 'bg-rose-400 text-white' },
   skipped:   { label: 'スキップ', className: 'bg-gray-100 text-gray-500' },
 }
 
