@@ -120,6 +120,15 @@ export async function updatePlanDate(planId: string, newDate: string): Promise<v
   if (error) throw new Error(error.message)
 }
 
+export async function updateAmount(planId: string, amount: number | null): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('maintenance_plans')
+    .update({ amount })
+    .eq('id', planId)
+  if (error) throw new Error(error.message)
+}
+
 /** この計画1件だけ削除 */
 export async function deletePlan(planId: string): Promise<void> {
   const supabase = createClient()

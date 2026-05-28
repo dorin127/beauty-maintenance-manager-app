@@ -18,7 +18,10 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conf
   const daysInMonth  = new Date(year, month, 0).getDate()
 
   const plansByDay = plans.reduce<Record<number, MaintenancePlan[]>>((acc, plan) => {
-    const day = parseInt(plan.planned_date.split('-')[2])
+    const dateKey = plan.status === 'completed' && plan.completed_date
+      ? plan.completed_date
+      : plan.planned_date
+    const day = parseInt(dateKey.split('-')[2])
     ;(acc[day] ??= []).push(plan)
     return acc
   }, {})

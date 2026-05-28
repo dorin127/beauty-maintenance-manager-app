@@ -10,6 +10,7 @@ import {
   cancelReservation,
   skipPlan,
   updatePlanDate,
+  updateAmount,
   deletePlan,
   deleteSeriesPlanned,
 } from '@/lib/planActions'
@@ -30,7 +31,7 @@ interface Props {
 
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const [completedDate, setCompletedDate] = useState(plan?.planned_date ?? new Date().toLocaleDateString('sv-SE'))
-  const [amountStr, setAmountStr]         = useState('')
+  const [amountStr, setAmountStr]         = useState(plan?.amount?.toString() ?? '')
   const [editDate, setEditDate]           = useState('')
   const [section, setSection]             = useState<Section>(null)
   const [loading, setLoading]             = useState(false)
@@ -354,16 +355,38 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
 
         {/* ── 実施済み・スキップ済みの表示 ── */}
         {!isActionable && (
-          <div className="text-center text-sm text-gray-400 py-2 space-y-0.5">
+          <div className="space-y-3 py-1">
             {plan.status === 'completed' ? (
               <>
-                <p>実施日：{plan.completed_date?.replace(/-/g, '/')}</p>
-                {plan.amount != null && (
-                  <p className="font-medium text-gray-600">¥{plan.amount.toLocaleString()}</p>
-                )}
+                <p className="text-center text-sm text-gray-400">
+                  実施日：{plan.completed_date?.replace(/-/g, '/')}
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">金額</label>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={amountStr}
+                        onChange={e => setAmountStr(e.target.value)}
+                        placeholder="例：15000"
+                        className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <button
+                      onClick={() => run(() => updateAmount(plan.id, amountStr !== '' ? parseInt(amountStr, 10) : null))}
+                      disabled={loading}
+                      className="shrink-0 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
+                    >
+                      {loading ? '...' : '保存'}
+                    </button>
+                  </div>
+                </div>
               </>
             ) : (
-              <p>スキップ済み</p>
+              <p className="text-center text-sm text-gray-400">スキップ済み</p>
             )}
           </div>
         )}
