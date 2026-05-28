@@ -1,8 +1,8 @@
 import type { MaintenancePlan } from '@/lib/types'
 
 const statusStyle: Record<string, string> = {
-  planned:   'bg-primary-light text-primary border-primary/30',
-  completed: 'bg-green-50 text-green-700 border-green-200',
+  planned:   'bg-blue-50 text-blue-700 border-blue-200',
+  completed: 'bg-red-50 text-red-600 border-red-200',
   skipped:   'bg-gray-100 text-gray-400 border-gray-200 line-through',
 }
 
