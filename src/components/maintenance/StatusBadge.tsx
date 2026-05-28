@@ -7,11 +7,11 @@ const config: Record<PlanStatus, { label: string; className: string }> = {
   skipped:   { label: 'スキップ', className: 'bg-gray-100 text-gray-500 line-through' },
 }
 
-export function StatusBadge({ status }: { status: PlanStatus }) {
+export function StatusBadge({ status, count }: { status: PlanStatus; count?: number }) {
   const { label, className } = config[status]
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
-      {label}
+      {label}{count !== undefined && count > 0 ? ` ${count}件` : ''}
     </span>
   )
 }

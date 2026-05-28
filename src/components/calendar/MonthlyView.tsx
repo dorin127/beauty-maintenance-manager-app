@@ -53,9 +53,13 @@ export function MonthlyView() {
     return result
   }, [plans, menus])
 
-  const planned   = plans.filter(p => p.status === 'planned').length
-  const reserved  = plans.filter(p => p.status === 'reserved').length
-  const completed = plans.filter(p => p.status === 'completed').length
+  const skipped   = plans.filter(p => p.status === 'skipped').length
+  const counts = {
+    planned:   plans.filter(p => p.status === 'planned').length,
+    reserved:  plans.filter(p => p.status === 'reserved').length,
+    completed: plans.filter(p => p.status === 'completed').length,
+    skipped,
+  }
 
   return (
     <>
@@ -65,16 +69,6 @@ export function MonthlyView() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-primary">{year}年{month}月</h2>
-            {!loading && (
-              <p className="text-sm text-gray-400 mt-0.5">
-                計画中 {planned}件 / 予約済 {reserved}件 / 実施済 {completed}件
-                {conflictDays.size > 0 && (
-                  <span className="ml-2 text-amber-500 font-medium">
-                    ⚠ 禁止処理の競合あり
-                  </span>
-                )}
-              </p>
-            )}
           </div>
           <div className="flex gap-2">
             <button
@@ -129,7 +123,7 @@ export function MonthlyView() {
         <div className="flex items-center justify-between mt-3 px-1">
           <div className="flex gap-2 flex-wrap">
             {(['planned', 'reserved', 'completed', 'skipped'] as const).map(s => (
-              <StatusBadge key={s} status={s} />
+              <StatusBadge key={s} status={s} count={counts[s]} />
             ))}
             {conflictDays.size > 0 && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-amber-600 bg-amber-50">
