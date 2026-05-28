@@ -54,6 +54,7 @@ export function MonthlyView() {
   }, [plans, menus])
 
   const planned   = plans.filter(p => p.status === 'planned').length
+  const reserved  = plans.filter(p => p.status === 'reserved').length
   const completed = plans.filter(p => p.status === 'completed').length
 
   return (
@@ -66,7 +67,7 @@ export function MonthlyView() {
             <h2 className="text-2xl font-bold text-primary">{year}年{month}月</h2>
             {!loading && (
               <p className="text-sm text-gray-400 mt-0.5">
-                計画中 {planned}件 / 実施済 {completed}件
+                計画中 {planned}件 / 予約済 {reserved}件 / 実施済 {completed}件
                 {conflictDays.size > 0 && (
                   <span className="ml-2 text-amber-500 font-medium">
                     ⚠ 禁止処理の競合あり
