@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useMonthlyPlans } from '@/hooks/usePlans'
 import { useMenus } from '@/hooks/useMenus'
 import { CalendarGrid } from './CalendarGrid'
 import { PlanModal } from '@/components/maintenance/PlanModal'
 import { PlanCard } from '@/components/maintenance/PlanCard'
+import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
 import type { MaintenancePlan } from '@/lib/types'
 
 export function MonthlyView() {
@@ -19,6 +19,7 @@ export function MonthlyView() {
   const month = parseInt(searchParams.get('month') ?? '') || now.getMonth() + 1
 
   const [selectedPlan, setSelectedPlan] = useState<MaintenancePlan | null>(null)
+  const [inputDate, setInputDate]       = useState<string | null>(null)
   const { plans, loading, refetch } = useMonthlyPlans(year, month)
   const { menus }                   = useMenus()
 
@@ -101,24 +102,22 @@ export function MonthlyView() {
                 <div key={i} className="h-[88px] bg-white rounded-lg animate-pulse border border-border-pink" />
               ))}
             </div>
-          ) : plans.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-gray-400 mb-3">この月の計画はまだありません</p>
-              <Link
-                href="/input"
-                className="inline-block bg-primary text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-primary-dark transition-colors"
-              >
-                ＋ 計画を追加する
-              </Link>
-            </div>
           ) : (
-            <CalendarGrid
-              year={year}
-              month={month}
-              plans={plans}
-              onPlanClick={setSelectedPlan}
-              conflictDays={conflictDays}
-            />
+            <>
+              {plans.length === 0 && (
+                <p className="text-center text-xs text-gray-400 mb-2">
+                  日付をクリックして計画を追加できます
+                </p>
+              )}
+              <CalendarGrid
+                year={year}
+                month={month}
+                plans={plans}
+                onPlanClick={setSelectedPlan}
+                onDayClick={setInputDate}
+                conflictDays={conflictDays}
+              />
+            </>
           )}
         </div>
 
@@ -142,11 +141,12 @@ export function MonthlyView() {
               </div>
             )}
           </div>
-          {plans.length > 0 && (
-            <Link href="/input" className="text-xs text-primary hover:underline">
-              ＋ 計画を追加
-            </Link>
-          )}
+          <button
+            onClick={() => setInputDate(new Date().toLocaleDateString('sv-SE'))}
+            className="text-xs text-primary hover:underline"
+          >
+            ＋ 計画を追加
+          </button>
         </div>
 
         {/* この月の計画一覧 */}
@@ -172,6 +172,35 @@ export function MonthlyView() {
         onClose={() => setSelectedPlan(null)}
         onUpdated={refetch}
       />
+
+      {inputDate && (
+        <div
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          onClick={() => setInputDate(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 pt-5 pb-3">
+              <h3 className="text-lg font-bold text-gray-800">計画を追加</h3>
+              <button
+                onClick={() => setInputDate(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-6 pb-6">
+              <MaintenanceForm
+                key={inputDate}
+                initialDate={inputDate}
+                onSuccess={() => { setInputDate(null); refetch() }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

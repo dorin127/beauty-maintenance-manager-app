@@ -6,12 +6,13 @@ interface Props {
   month: number
   plans: MaintenancePlan[]
   onPlanClick: (plan: MaintenancePlan) => void
+  onDayClick?: (dateStr: string) => void
   conflictDays?: Set<number>
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
 
-export function CalendarGrid({ year, month, plans, onPlanClick, conflictDays }: Props) {
+export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conflictDays }: Props) {
   const firstWeekday = new Date(year, month - 1, 1).getDay()
   const daysInMonth  = new Date(year, month, 0).getDate()
 
@@ -27,9 +28,11 @@ export function CalendarGrid({ year, month, plans, onPlanClick, conflictDays }: 
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const todayStr = new Date().toLocaleDateString('sv-SE')
-  const isToday  = (day: number) =>
+  const todayStr  = new Date().toLocaleDateString('sv-SE')
+  const isToday   = (day: number) =>
     todayStr === `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const dateStr   = (day: number) =>
+    `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
   return (
     <div>
@@ -50,9 +53,10 @@ export function CalendarGrid({ year, month, plans, onPlanClick, conflictDays }: 
         {cells.map((day, idx) => (
           <div
             key={idx}
+            onClick={() => day !== null && onDayClick?.(dateStr(day))}
             className={`min-h-[88px] rounded-lg p-1.5 ${
               day !== null
-                ? `bg-white border ${isToday(day) ? 'border-primary border-2' : 'border-border-pink'}`
+                ? `bg-white border ${isToday(day) ? 'border-primary border-2' : 'border-border-pink'} ${onDayClick ? 'cursor-pointer hover:border-primary/60 hover:bg-primary-light/30 transition-colors' : ''}`
                 : ''
             }`}
           >
@@ -79,7 +83,7 @@ export function CalendarGrid({ year, month, plans, onPlanClick, conflictDays }: 
                   {(plansByDay[day] ?? []).map(plan => (
                     <button
                       key={plan.id}
-                      onClick={() => onPlanClick(plan)}
+                      onClick={e => { e.stopPropagation(); onPlanClick(plan) }}
                       className="w-full text-left"
                     >
                       <PlanChip plan={plan} />

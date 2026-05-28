@@ -9,12 +9,17 @@ import type { MaintenanceMenu } from '@/lib/types'
 const inputClass =
   'w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white'
 
-export function MaintenanceForm() {
+interface Props {
+  initialDate?: string
+  onSuccess?: () => void
+}
+
+export function MaintenanceForm({ initialDate, onSuccess }: Props) {
   const router = useRouter()
   const { menus, loading: menusLoading } = useMenus()
 
   const [selectedMenu, setSelectedMenu] = useState<MaintenanceMenu | null>(null)
-  const [plannedDate, setPlannedDate] = useState(new Date().toLocaleDateString('sv-SE'))
+  const [plannedDate, setPlannedDate] = useState(initialDate ?? new Date().toLocaleDateString('sv-SE'))
   const [intervalMonths, setIntervalMonths] = useState(1)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,8 +46,12 @@ export function MaintenanceForm() {
         interval_months: intervalMonths,
         notes: notes || undefined,
       })
-      setSuccess(true)
-      setTimeout(() => router.push('/monthly'), 1500)
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        setSuccess(true)
+        setTimeout(() => router.push('/monthly'), 1500)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました')
     } finally {

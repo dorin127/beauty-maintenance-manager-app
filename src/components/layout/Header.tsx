@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV_ITEMS = [
-  { href: '/input',   label: '入力' },
   { href: '/monthly', label: '月間' },
   { href: '/annual',  label: '年間' },
 ]
