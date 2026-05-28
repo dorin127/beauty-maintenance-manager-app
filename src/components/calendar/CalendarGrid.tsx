@@ -1,3 +1,4 @@
+import { isHoliday } from 'japanese-holidays'
 import type { MaintenancePlan } from '@/lib/types'
 import { PlanChip } from './PlanChip'
 
@@ -28,11 +29,13 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conf
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const todayStr  = new Date().toLocaleDateString('sv-SE')
-  const isToday   = (day: number) =>
+  const todayStr   = new Date().toLocaleDateString('sv-SE')
+  const isToday    = (day: number) =>
     todayStr === `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  const dateStr   = (day: number) =>
+  const dateStr    = (day: number) =>
     `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const holidayOf  = (day: number) =>
+    isHoliday(new Date(year, month - 1, day))
 
   return (
     <div>
@@ -50,50 +53,68 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conf
       </div>
 
       <div className="grid grid-cols-7 gap-1">
-        {cells.map((day, idx) => (
-          <div
-            key={idx}
-            onClick={() => day !== null && onDayClick?.(dateStr(day))}
-            className={`min-h-[88px] rounded-lg p-1.5 ${
-              day !== null
-                ? `bg-white border ${isToday(day) ? 'border-primary border-2' : 'border-border-pink'} ${onDayClick ? 'cursor-pointer hover:border-primary/60 hover:bg-primary-light/30 transition-colors' : ''}`
-                : ''
-            }`}
-          >
-            {day !== null && (
-              <>
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={`text-xs ${
-                      idx % 7 === 0 ? 'text-red-400' : idx % 7 === 6 ? 'text-blue-400' : 'text-gray-600'
-                    } ${isToday(day) ? 'font-bold text-primary' : ''}`}
-                  >
-                    {day}
-                  </span>
-                  {conflictDays?.has(day) && (
+        {cells.map((day, idx) => {
+          const holiday = day !== null ? holidayOf(day) : undefined
+          const isSun   = idx % 7 === 0
+          const isSat   = idx % 7 === 6
+          const today   = day !== null && isToday(day)
+
+          return (
+            <div
+              key={idx}
+              onClick={() => day !== null && onDayClick?.(dateStr(day))}
+              className={`min-h-[88px] rounded-lg p-1.5 ${
+                day !== null
+                  ? `bg-white border ${today ? 'border-primary border-2' : holiday ? 'border-red-200' : 'border-border-pink'} ${onDayClick ? 'cursor-pointer hover:border-primary/60 hover:bg-primary-light/30 transition-colors' : ''}`
+                  : ''
+              }`}
+            >
+              {day !== null && (
+                <>
+                  <div className="flex items-center justify-between mb-0.5">
                     <span
-                      title="同日に禁止処理の組み合わせがあります"
-                      className="text-[11px] text-amber-500 leading-none"
+                      className={`text-xs font-medium ${
+                        today
+                          ? 'text-primary font-bold'
+                          : isSun || holiday
+                          ? 'text-red-400'
+                          : isSat
+                          ? 'text-blue-400'
+                          : 'text-gray-600'
+                      }`}
                     >
-                      ⚠
+                      {day}
                     </span>
+                    {conflictDays?.has(day) && (
+                      <span
+                        title="同日に禁止処理の組み合わせがあります"
+                        className="text-[11px] text-amber-500 leading-none"
+                      >
+                        ⚠
+                      </span>
+                    )}
+                  </div>
+                  {holiday && (
+                    <p className="text-[9px] leading-tight text-red-400 truncate mb-0.5">
+                      {holiday}
+                    </p>
                   )}
-                </div>
-                <div className="space-y-0.5">
-                  {(plansByDay[day] ?? []).map(plan => (
-                    <button
-                      key={plan.id}
-                      onClick={e => { e.stopPropagation(); onPlanClick(plan) }}
-                      className="w-full text-left"
-                    >
-                      <PlanChip plan={plan} />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+                  <div className="space-y-0.5">
+                    {(plansByDay[day] ?? []).map(plan => (
+                      <button
+                        key={plan.id}
+                        onClick={e => { e.stopPropagation(); onPlanClick(plan) }}
+                        className="w-full text-left"
+                      >
+                        <PlanChip plan={plan} />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
