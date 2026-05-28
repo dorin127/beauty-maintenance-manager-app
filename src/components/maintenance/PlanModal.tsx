@@ -106,7 +106,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
 
         {/* 予約済クリニック表示 */}
         {plan.status === 'reserved' && reservedClinic && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 text-sm text-amber-800">
+          <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-4 text-sm text-rose-800">
             🏥 {reservedClinic.chain_name}　{reservedClinic.branch_name}
           </div>
         )}
@@ -142,7 +142,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               <button
                 onClick={openReserve}
                 disabled={loading}
-                className="w-full bg-amber-400 text-white font-medium py-2.5 rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-60"
+                className="w-full bg-rose-200 text-rose-800 font-medium py-2.5 rounded-lg hover:bg-rose-300 transition-colors disabled:opacity-60"
               >
                 予約済にする
               </button>
@@ -151,7 +151,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               <button
                 onClick={() => run(() => cancelReservation(plan.id))}
                 disabled={loading}
-                className="w-full border border-amber-300 text-amber-700 font-medium py-2.5 rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
+                className="w-full border border-rose-200 text-rose-600 font-medium py-2.5 rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-60"
               >
                 予約を取り消す
               </button>
@@ -233,7 +233,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               <button
                 onClick={() => run(() => reservePlan(plan.id, selectedClinic))}
                 disabled={loading || !selectedClinic}
-                className="flex-1 bg-amber-400 text-white font-medium py-2.5 rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-60"
+                className="flex-1 bg-rose-200 text-rose-800 font-medium py-2.5 rounded-lg hover:bg-rose-300 transition-colors disabled:opacity-60"
               >
                 {loading ? '更新中...' : '予約済にする'}
               </button>
