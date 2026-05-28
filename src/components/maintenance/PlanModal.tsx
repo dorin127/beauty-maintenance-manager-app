@@ -137,14 +137,6 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                 次回予定は実施日 + {plan.interval_months}ヶ月で自動更新
               </p>
             </div>
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
-            >
-              実施済みにする
-            </button>
-
             {/* 予約済にする / 予約取り消し */}
             {plan.status === 'planned' && (
               <button
@@ -164,6 +156,14 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                 予約を取り消す
               </button>
             )}
+
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
+            >
+              実施済みにする
+            </button>
 
             <button
               onClick={() => run(() => skipPlan(plan.id))}
