@@ -10,6 +10,7 @@ import { PlanCard } from '@/components/maintenance/PlanCard'
 import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
 import { MenuManageModal } from '@/components/maintenance/MenuManageModal'
 import { ClinicManageModal } from '@/components/maintenance/ClinicManageModal'
+import { StatusBadge } from '@/components/maintenance/StatusBadge'
 import type { MaintenancePlan } from '@/lib/types'
 
 export function MonthlyView() {
@@ -127,23 +128,14 @@ export function MonthlyView() {
 
         {/* 凡例 */}
         <div className="flex items-center justify-between mt-3 px-1">
-          <div className="flex gap-4">
-            {[
-              { color: 'bg-rose-50 border-rose-200',  label: '計画中' },
-              { color: 'bg-rose-200 border-rose-300', label: '予約済' },
-              { color: 'bg-rose-500 border-rose-500', label: '実施済' },
-              { color: 'bg-gray-100 border-gray-200',   label: 'スキップ' },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className={`w-3 h-3 rounded border inline-block ${color}`} />
-                {label}
-              </div>
+          <div className="flex gap-2 flex-wrap">
+            {(['planned', 'reserved', 'completed', 'skipped'] as const).map(s => (
+              <StatusBadge key={s} status={s} />
             ))}
             {conflictDays.size > 0 && (
-              <div className="flex items-center gap-1 text-xs text-amber-500">
-                <span>⚠</span>
-                <span>禁止処理の競合</span>
-              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-amber-600 bg-amber-50">
+                ⚠ 禁止処理の競合
+              </span>
             )}
           </div>
           <div className="flex gap-3">
