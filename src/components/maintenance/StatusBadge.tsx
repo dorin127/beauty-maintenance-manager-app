@@ -2,6 +2,7 @@ import type { PlanStatus } from '@/lib/types'
 
 const config: Record<PlanStatus, { label: string; className: string }> = {
   planned:   { label: '計画中', className: 'bg-rose-50 text-rose-400 ring-1 ring-rose-300' },
+  reserved:  { label: '予約済', className: 'bg-amber-100 text-amber-700' },
   completed: { label: '実施済', className: 'bg-rose-400 text-white' },
   skipped:   { label: 'スキップ', className: 'bg-gray-100 text-gray-500' },
 }

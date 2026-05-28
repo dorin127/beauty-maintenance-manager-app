@@ -9,6 +9,7 @@ import { PlanModal } from '@/components/maintenance/PlanModal'
 import { PlanCard } from '@/components/maintenance/PlanCard'
 import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
 import { MenuManageModal } from '@/components/maintenance/MenuManageModal'
+import { ClinicManageModal } from '@/components/maintenance/ClinicManageModal'
 import type { MaintenancePlan } from '@/lib/types'
 
 export function MonthlyView() {
@@ -19,9 +20,10 @@ export function MonthlyView() {
   const year  = parseInt(searchParams.get('year')  ?? '') || now.getFullYear()
   const month = parseInt(searchParams.get('month') ?? '') || now.getMonth() + 1
 
-  const [selectedPlan, setSelectedPlan]     = useState<MaintenancePlan | null>(null)
-  const [inputDate, setInputDate]           = useState<string | null>(null)
-  const [showMenuManage, setShowMenuManage] = useState(false)
+  const [selectedPlan, setSelectedPlan]         = useState<MaintenancePlan | null>(null)
+  const [inputDate, setInputDate]               = useState<string | null>(null)
+  const [showMenuManage, setShowMenuManage]     = useState(false)
+  const [showClinicManage, setShowClinicManage] = useState(false)
   const { plans, loading, refetch } = useMonthlyPlans(year, month)
   const { menus }                   = useMenus()
 
@@ -127,9 +129,10 @@ export function MonthlyView() {
         <div className="flex items-center justify-between mt-3 px-1">
           <div className="flex gap-4">
             {[
-              { color: 'bg-rose-50 border-rose-300',  label: '計画中' },
-              { color: 'bg-rose-400 border-rose-400', label: '実施済' },
-              { color: 'bg-gray-100 border-gray-200', label: 'スキップ' },
+              { color: 'bg-rose-50 border-rose-300',    label: '計画中' },
+              { color: 'bg-amber-100 border-amber-300', label: '予約済' },
+              { color: 'bg-rose-400 border-rose-400',   label: '実施済' },
+              { color: 'bg-gray-100 border-gray-200',   label: 'スキップ' },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className={`w-3 h-3 rounded border inline-block ${color}`} />
@@ -143,12 +146,20 @@ export function MonthlyView() {
               </div>
             )}
           </div>
-          <button
-            onClick={() => setShowMenuManage(true)}
-            className="text-xs text-gray-500 hover:text-primary transition-colors"
-          >
-            メニュー管理 ›
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowMenuManage(true)}
+              className="text-xs text-gray-500 hover:text-primary transition-colors"
+            >
+              メニュー管理 ›
+            </button>
+            <button
+              onClick={() => setShowClinicManage(true)}
+              className="text-xs text-gray-500 hover:text-primary transition-colors"
+            >
+              クリニック管理 ›
+            </button>
+          </div>
         </div>
 
         {/* この月の計画一覧 */}
@@ -177,6 +188,10 @@ export function MonthlyView() {
 
       {showMenuManage && (
         <MenuManageModal onClose={() => setShowMenuManage(false)} />
+      )}
+
+      {showClinicManage && (
+        <ClinicManageModal onClose={() => setShowClinicManage(false)} />
       )}
 
       {inputDate && (

@@ -81,6 +81,24 @@ export async function completePlan(
   }
 }
 
+export async function reservePlan(planId: string, clinicId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('maintenance_plans')
+    .update({ status: 'reserved', clinic_id: clinicId })
+    .eq('id', planId)
+  if (error) throw new Error(error.message)
+}
+
+export async function cancelReservation(planId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('maintenance_plans')
+    .update({ status: 'planned', clinic_id: null })
+    .eq('id', planId)
+  if (error) throw new Error(error.message)
+}
+
 export async function skipPlan(planId: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase
