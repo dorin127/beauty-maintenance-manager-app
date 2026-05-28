@@ -6,7 +6,6 @@ import { useMonthlyPlans } from '@/hooks/usePlans'
 import { useMenus } from '@/hooks/useMenus'
 import { CalendarGrid } from './CalendarGrid'
 import { PlanModal } from '@/components/maintenance/PlanModal'
-import { PlanCard } from '@/components/maintenance/PlanCard'
 import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
 import { MenuManageModal } from '@/components/maintenance/MenuManageModal'
 import { ClinicManageModal } from '@/components/maintenance/ClinicManageModal'
@@ -56,7 +55,6 @@ export function MonthlyView() {
 
   const planned   = plans.filter(p => p.status === 'planned').length
   const completed = plans.filter(p => p.status === 'completed').length
-  const sorted    = [...plans].sort((a, b) => a.planned_date.localeCompare(b.planned_date))
 
   return (
     <>
@@ -154,21 +152,6 @@ export function MonthlyView() {
           </div>
         </div>
 
-        {/* この月の計画一覧 */}
-        {plans.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-gray-600 mb-3">この月の計画一覧</h3>
-            <div className="space-y-2">
-              {sorted.map(plan => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  onClick={() => setSelectedPlan(plan)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <PlanModal
