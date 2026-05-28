@@ -26,6 +26,7 @@ export interface MaintenancePlan {
   interval_months: number
   status: PlanStatus
   completed_date: string | null
+  amount: number | null
   clinic_id: string | null
   notes: string | null
   series_id: string

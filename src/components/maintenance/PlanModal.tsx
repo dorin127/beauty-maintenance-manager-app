@@ -30,6 +30,7 @@ interface Props {
 
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const [completedDate, setCompletedDate] = useState(plan?.planned_date ?? new Date().toLocaleDateString('sv-SE'))
+  const [amountStr, setAmountStr]         = useState('')
   const [editDate, setEditDate]           = useState('')
   const [section, setSection]             = useState<Section>(null)
   const [loading, setLoading]             = useState(false)
@@ -64,11 +65,13 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
     }
   }
 
+  const amount = amountStr !== '' ? parseInt(amountStr, 10) : null
+
   function handleComplete() {
     if (completedDate !== plan!.planned_date) {
       setSection('weekdayChoice')
     } else {
-      run(() => completePlan(plan!, completedDate))
+      run(() => completePlan(plan!, completedDate, undefined, amount))
     }
   }
 
@@ -136,6 +139,20 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               <p className="text-xs text-gray-400 mt-1">
                 次回予定は実施日 + {plan.interval_months}ヶ月で自動更新
               </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">金額（任意）</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={amountStr}
+                  onChange={e => setAmountStr(e.target.value)}
+                  placeholder="例：15000"
+                  className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
             </div>
             {/* 予約済にする / 予約取り消し */}
             {plan.status === 'planned' && (
@@ -255,14 +272,14 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
               <p className="mt-1">今後の計画はどちらの曜日にしますか？</p>
             </div>
             <button
-              onClick={() => run(() => completePlan(plan, completedDate, completedDate))}
+              onClick={() => run(() => completePlan(plan, completedDate, completedDate, amount))}
               disabled={loading}
               className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
             >
               {loading ? '更新中...' : `今後も${weekdayOf(completedDate)}にする（実施日基準）`}
             </button>
             <button
-              onClick={() => run(() => completePlan(plan, completedDate, plan.planned_date))}
+              onClick={() => run(() => completePlan(plan, completedDate, plan.planned_date, amount))}
               disabled={loading}
               className="w-full border border-primary text-primary font-medium py-2.5 rounded-lg hover:bg-primary-light transition-colors disabled:opacity-60"
             >
@@ -337,10 +354,17 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
 
         {/* ── 実施済み・スキップ済みの表示 ── */}
         {!isActionable && (
-          <div className="text-center text-sm text-gray-400 py-2">
-            {plan.status === 'completed'
-              ? `実施日：${plan.completed_date?.replace(/-/g, '/')}`
-              : 'スキップ済み'}
+          <div className="text-center text-sm text-gray-400 py-2 space-y-0.5">
+            {plan.status === 'completed' ? (
+              <>
+                <p>実施日：{plan.completed_date?.replace(/-/g, '/')}</p>
+                {plan.amount != null && (
+                  <p className="font-medium text-gray-600">¥{plan.amount.toLocaleString()}</p>
+                )}
+              </>
+            ) : (
+              <p>スキップ済み</p>
+            )}
           </div>
         )}
 

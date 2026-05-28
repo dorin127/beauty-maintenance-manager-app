@@ -31,7 +31,8 @@ export async function createPlanSeries(input: NewPlanInput): Promise<void> {
 export async function completePlan(
   plan: MaintenancePlan,
   completedDate: string,
-  baseForFuture?: string
+  baseForFuture?: string,
+  amount?: number | null
 ): Promise<void> {
   const supabase = createClient()
   const originalPlannedDate = plan.planned_date
@@ -40,7 +41,7 @@ export async function completePlan(
   // 1. 現在の計画を実施済みに更新（planned_date も実施日へ移動）
   const { error } = await supabase
     .from('maintenance_plans')
-    .update({ status: 'completed', completed_date: completedDate, planned_date: completedDate })
+    .update({ status: 'completed', completed_date: completedDate, planned_date: completedDate, amount: amount ?? null })
     .eq('id', plan.id)
   if (error) throw new Error(error.message)
 
