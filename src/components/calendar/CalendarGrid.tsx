@@ -65,7 +65,7 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick }: Pr
             <div
               key={idx}
               onClick={() => day !== null && onDayClick?.(dateStr(day))}
-              className={`min-h-[88px] rounded-lg p-1.5 ${
+              className={`min-h-[72px] sm:min-h-[88px] rounded-lg p-1 sm:p-1.5 ${
                 day !== null
                   ? `bg-white border ${today ? 'border-primary border-2' : holiday ? 'border-red-200' : 'border-border-pink'} ${onDayClick ? 'cursor-pointer hover:border-primary/60 hover:bg-primary-light/30 transition-colors' : ''}`
                   : ''
@@ -89,7 +89,7 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick }: Pr
                     </span>
                   </div>
                   {holiday && (
-                    <p className="text-[9px] leading-tight text-red-400 truncate mb-0.5">
+                    <p className="hidden sm:block text-[9px] leading-tight text-red-400 truncate mb-0.5">
                       {holiday}
                     </p>
                   )}
