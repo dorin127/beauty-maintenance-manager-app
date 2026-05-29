@@ -13,8 +13,8 @@ export function Header() {
 
   return (
     <header className="bg-white border-b border-border-pink sticky top-0 z-10">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/monthly" className="text-xl font-bold text-primary tracking-wide">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <Link href="/monthly" className="text-base sm:text-xl font-bold text-primary tracking-wide whitespace-nowrap">
           美容メンテ マネージャー
         </Link>
         <nav className="flex gap-1">
