@@ -8,12 +8,11 @@ interface Props {
   plans: MaintenancePlan[]
   onPlanClick: (plan: MaintenancePlan) => void
   onDayClick?: (dateStr: string) => void
-  conflictDays?: Set<number>
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
 
-export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conflictDays }: Props) {
+export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick }: Props) {
   const firstWeekday = new Date(year, month - 1, 1).getDay()
   const daysInMonth  = new Date(year, month, 0).getDate()
 
@@ -88,14 +87,6 @@ export function CalendarGrid({ year, month, plans, onPlanClick, onDayClick, conf
                     >
                       {day}
                     </span>
-                    {conflictDays?.has(day) && (
-                      <span
-                        title="同日に禁止処理の組み合わせがあります"
-                        className="text-[11px] text-amber-500 leading-none"
-                      >
-                        ⚠
-                      </span>
-                    )}
                   </div>
                   {holiday && (
                     <p className="text-[9px] leading-tight text-red-400 truncate mb-0.5">

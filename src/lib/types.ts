@@ -1,10 +1,16 @@
 export type PlanStatus = 'planned' | 'reserved' | 'completed' | 'skipped'
 
+export interface Caution {
+  menu_name: string
+  wait_months: number
+  reason: string
+}
+
 export interface MaintenanceMenu {
   id: string
   name: string
   default_interval_months: number
-  prohibited_with: string[]
+  cautions: Caution[]
   notes: string | null
   created_at: string
   updated_at: string
@@ -27,6 +33,8 @@ export interface MaintenancePlan {
   status: PlanStatus
   completed_date: string | null
   amount: number | null
+  body_part: string | null
+  units: number | null
   clinic_id: string | null
   notes: string | null
   series_id: string
@@ -39,5 +47,7 @@ export interface NewPlanInput {
   menu_name: string
   planned_date: string
   interval_months: number
+  body_part?: string
+  units?: number
   notes?: string
 }

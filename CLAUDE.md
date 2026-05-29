@@ -47,16 +47,17 @@ npm run lint     # ESLint
 
 ## ビジネスロジック (`src/lib/schedule.ts`)
 
-- **`generateSeriesPlans(input, seriesId?)`**: 初回日付から12ヶ月先まで繰り返し計画を生成。同一シリーズは共通の `series_id` を持つ。
-- **`calcNextDate(completedDate, intervalMonths)`**: 実施完了時に `completed_date + interval_months` で次の予定日を算出。将来計画の再計算に使用。
-- **禁止処理警告**: `maintenance_menus.prohibited_with[]` に同日追加しようとしたメニューが含まれる場合に警告表示する（実装予定）。
+- **`generateSeriesPlans(input, seriesId?)`**: 初回日付から12ヶ月先まで繰り返し計画を生成。同一シリーズは共通の `series_id` を持つ。`interval_months=0` の場合は1件のみ生成。
+- **`calcNextWeekdayAligned(base, months)`**: 同じ曜日・月内ポジション（第N○曜日）を維持しながら指定月数後の日付を算出。ドリフト防止のため常に初回日から再計算する。
+- **禁忌チェック（`MaintenanceForm`）**: スケジュール登録時に `maintenance_menus.cautions[]` を参照し、前後の期間内に相性の悪い施術がある場合に警告を表示。ユーザーが同意した場合のみ保存できる。
 
-## DB 構成 (`supabase/migrations/0001_initial_schema.sql`)
+## DB 構成
 
-- `maintenance_menus`: メニューマスタ。シードデータに代表的な美容メニュー9件が含まれる。
-- `maintenance_plans`: 計画レコード。`status` は `planned` / `completed` / `skipped`。
-- `series_id` で繰り返しシリーズを紐付け。
+- **`maintenance_menus`**: メニューマスタ。`cautions JSONB[]`（`{menu_name, wait_months, reason}`）で施術後の禁忌設定を管理。`prohibited_with TEXT[]` 列はDB上に残っているがアプリからは未使用。
+- **`maintenance_plans`**: 計画レコード。`status` は `planned` / `reserved` / `completed` / `skipped`。`body_part`・`units`・`amount`・`clinic_id` を保持。
+- `series_id` で繰り返しシリーズを紐付け。実施完了時は以降の計画を削除し再生成する。
 
 ## 将来の拡張
 
 - Google Calendar 連携（`planned_date` → Google Event）
+- 同日禁止（`prohibited_with`）の管理UI（現在はDB直接編集のみ）

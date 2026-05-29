@@ -10,6 +10,8 @@ type PlanInsert = {
   status: 'planned'
   completed_date: null
   notes: string | null
+  body_part: string | null
+  units: number | null
   series_id: string
 }
 
@@ -32,7 +34,9 @@ export async function completePlan(
   plan: MaintenancePlan,
   completedDate: string,
   baseForFuture?: string,
-  amount?: number | null
+  amount?: number | null,
+  bodyPart?: string | null,
+  units?: number | null,
 ): Promise<void> {
   const supabase = createClient()
   const originalPlannedDate = plan.planned_date
@@ -41,7 +45,14 @@ export async function completePlan(
   // 1. 現在の計画を実施済みに更新（planned_date も実施日へ移動）
   const { error } = await supabase
     .from('maintenance_plans')
-    .update({ status: 'completed', completed_date: completedDate, planned_date: completedDate, amount: amount ?? null })
+    .update({
+      status: 'completed',
+      completed_date: completedDate,
+      planned_date: completedDate,
+      amount: amount ?? null,
+      body_part: bodyPart ?? null,
+      units: units ?? null,
+    })
     .eq('id', plan.id)
   if (error) throw new Error(error.message)
 
@@ -54,7 +65,9 @@ export async function completePlan(
     .gt('planned_date', originalPlannedDate)
   if (delErr) throw new Error(delErr.message)
 
-  // 3. base 日付から12ヶ月先まで再生成
+  // 3. base 日付から12ヶ月先まで再生成（interval 0 = 定期なし、再生成しない）
+  if (plan.interval_months === 0) return
+
   const cutoff   = addMonths(new Date(), 12)
   const baseDate = parseDate(base)
   const newPlans: PlanInsert[] = []
@@ -70,6 +83,8 @@ export async function completePlan(
       status:          'planned',
       completed_date:  null,
       notes:           plan.notes ?? null,
+      body_part:       plan.body_part ?? null,
+      units:           plan.units ?? null,
       series_id:       plan.series_id,
     })
     step++
@@ -82,11 +97,17 @@ export async function completePlan(
   }
 }
 
-export async function reservePlan(planId: string, clinicId: string): Promise<void> {
+export async function reservePlan(
+  planId: string,
+  clinicId: string,
+  amount: number | null,
+  bodyPart: string | null,
+  units: number | null,
+): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase
     .from('maintenance_plans')
-    .update({ status: 'reserved', clinic_id: clinicId })
+    .update({ status: 'reserved', clinic_id: clinicId, amount, body_part: bodyPart, units })
     .eq('id', planId)
   if (error) throw new Error(error.message)
 }
@@ -123,12 +144,14 @@ export async function updatePlanDate(planId: string, newDate: string): Promise<v
 export async function updateCompletedPlan(
   planId: string,
   completedDate: string,
-  amount: number | null
+  amount: number | null,
+  bodyPart: string | null,
+  units: number | null,
 ): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase
     .from('maintenance_plans')
-    .update({ completed_date: completedDate, planned_date: completedDate, amount })
+    .update({ completed_date: completedDate, planned_date: completedDate, amount, body_part: bodyPart, units })
     .eq('id', planId)
   if (error) throw new Error(error.message)
 }

@@ -35,9 +35,29 @@ export function useMonthlyPlans(year: number, month: number) {
   return { plans, loading, error, refetch }
 }
 
+export function useUnpricedPlans() {
+  const [plans, setPlans] = useState<MaintenancePlan[]>([])
+  const [revision, setRevision] = useState(0)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('maintenance_plans')
+      .select('*')
+      .eq('status', 'completed')
+      .is('amount', null)
+      .order('planned_date', { ascending: false })
+      .then(({ data }) => setPlans(data ?? []))
+  }, [revision])
+
+  const refetch = () => setRevision(r => r + 1)
+  return { plans, refetch }
+}
+
 export function useAnnualPlans(year: number) {
   const [plans, setPlans] = useState<MaintenancePlan[]>([])
   const [loading, setLoading] = useState(true)
+  const [revision, setRevision] = useState(0)
 
   useEffect(() => {
     const supabase = createClient()
@@ -51,7 +71,8 @@ export function useAnnualPlans(year: number) {
         setPlans(data ?? [])
         setLoading(false)
       })
-  }, [year])
+  }, [year, revision])
 
-  return { plans, loading }
+  const refetch = () => setRevision(r => r + 1)
+  return { plans, loading, refetch }
 }

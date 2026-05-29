@@ -32,12 +32,15 @@ interface Props {
 export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const [completedDate, setCompletedDate] = useState(plan?.planned_date ?? new Date().toLocaleDateString('sv-SE'))
   const [amountStr, setAmountStr]         = useState(plan?.amount?.toString() ?? '')
+  const [bodyPart, setBodyPart]           = useState(plan?.body_part ?? '')
+  const [unitsStr, setUnitsStr]           = useState(plan?.units?.toString() ?? '')
   // 実施済み編集用
   const [editCompletedDate, setEditCompletedDate] = useState(plan?.completed_date ?? plan?.planned_date ?? '')
   const [editDate, setEditDate]           = useState('')
   const [section, setSection]             = useState<Section>(null)
   const [loading, setLoading]             = useState(false)
   const [err, setErr]                     = useState<string | null>(null)
+  const [amountErr, setAmountErr]         = useState<string | null>(null)
 
   // 予約セクション用
   const { clinics, chainNames, loading: clinicsLoading } = useClinics()
@@ -71,10 +74,15 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
   const amount = amountStr !== '' ? parseInt(amountStr, 10) : null
 
   function handleComplete() {
+    if (!amountStr) {
+      setAmountErr('金額を入力してください')
+      return
+    }
+    setAmountErr(null)
     if (completedDate !== plan!.planned_date) {
       setSection('weekdayChoice')
     } else {
-      run(() => completePlan(plan!, completedDate, undefined, amount))
+      run(() => completePlan(plan!, completedDate, undefined, amount, bodyPart || null, unitsStr ? parseInt(unitsStr, 10) : null))
     }
   }
 
@@ -91,10 +99,18 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
 
   const isActionable = plan.status === 'planned' || plan.status === 'reserved'
 
+  function handleClose() {
+    if (plan?.status === 'completed' && !amountStr) {
+      setAmountErr('金額を入力してください')
+      return
+    }
+    onClose()
+  }
+
   return (
     <div
       className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-white rounded-2xl shadow-xl border border-border-pink p-6 w-full max-w-md mx-4"
@@ -104,8 +120,10 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-gray-800">{plan.menu_name}</h3>
-            <p className="text-sm text-gray-500">予定日：{formatted}</p>
-            <p className="text-xs text-gray-400">{plan.interval_months}ヶ月ごと</p>
+            <p className="text-sm text-gray-500">
+              {plan.status === 'reserved' ? '予約日' : plan.status === 'completed' ? '実施日' : '計画日'}：{formatted}
+            </p>
+            <p className="text-xs text-gray-400">{plan.interval_months === 0 ? '定期なし' : `${plan.interval_months}ヶ月ごと`}</p>
           </div>
           <StatusBadge status={plan.status} />
         </div>
@@ -139,21 +157,49 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                 onChange={e => setCompletedDate(e.target.value)}
                 className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-gray-400 mt-1">
-                次回予定は実施日 + {plan.interval_months}ヶ月で自動更新
-              </p>
+              {plan.interval_months > 0 && (
+                <p className="text-xs text-gray-400 mt-1">
+                  次回予定は実施日 + {plan.interval_months}ヶ月で自動更新
+                </p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">金額（任意）</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">金額</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
                 <input
                   type="number"
                   min="0"
                   value={amountStr}
-                  onChange={e => setAmountStr(e.target.value)}
+                  onChange={e => { setAmountStr(e.target.value); setAmountErr(null) }}
                   placeholder="例：15000"
-                  className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className={`w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${amountErr ? 'border-red-400' : 'border-border-pink'}`}
+                />
+              </div>
+              {amountErr && (
+                <p className="text-xs text-red-500 mt-1">{amountErr}</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">部位（任意）</label>
+                <input
+                  type="text"
+                  value={bodyPart}
+                  onChange={e => setBodyPart(e.target.value)}
+                  placeholder="例：額、目尻"
+                  className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="w-28">
+                <label className="block text-sm font-medium text-gray-700 mb-1">単位数（任意）</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={unitsStr}
+                  onChange={e => setUnitsStr(e.target.value)}
+                  placeholder="例：20"
+                  className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -251,7 +297,13 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
 
             <div className="flex gap-2">
               <button
-                onClick={() => run(() => reservePlan(plan.id, selectedClinic))}
+                onClick={() => run(() => reservePlan(
+                  plan.id,
+                  selectedClinic,
+                  amountStr !== '' ? parseInt(amountStr, 10) : null,
+                  bodyPart || null,
+                  unitsStr ? parseInt(unitsStr, 10) : null,
+                ))}
                 disabled={loading || !selectedClinic}
                 className="flex-1 bg-rose-200 text-rose-800 font-medium py-2.5 rounded-lg hover:bg-rose-300 transition-colors disabled:opacity-60"
               >
@@ -271,22 +323,22 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
         {isActionable && section === 'weekdayChoice' && (
           <div className="space-y-3">
             <div className="bg-surface rounded-lg px-3 py-2 text-sm text-gray-600 text-center">
-              <p>予定日（{weekdayOf(plan.planned_date)}）と異なる日に実施しました。</p>
+              <p>計画日（{weekdayOf(plan.planned_date)}）と異なる日に実施しました。</p>
               <p className="mt-1">今後の計画はどちらの曜日にしますか？</p>
             </div>
             <button
-              onClick={() => run(() => completePlan(plan, completedDate, completedDate, amount))}
+              onClick={() => run(() => completePlan(plan, completedDate, completedDate, amount, bodyPart || null, unitsStr ? parseInt(unitsStr, 10) : null))}
               disabled={loading}
               className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
             >
               {loading ? '更新中...' : `今後も${weekdayOf(completedDate)}にする（実施日基準）`}
             </button>
             <button
-              onClick={() => run(() => completePlan(plan, completedDate, plan.planned_date, amount))}
+              onClick={() => run(() => completePlan(plan, completedDate, plan.planned_date, amount, bodyPart || null, unitsStr ? parseInt(unitsStr, 10) : null))}
               disabled={loading}
               className="w-full border border-primary text-primary font-medium py-2.5 rounded-lg hover:bg-primary-light transition-colors disabled:opacity-60"
             >
-              {loading ? '更新中...' : `元の${weekdayOf(plan.planned_date)}に戻す`}
+              {loading ? '更新中...' : `元の計画日（${weekdayOf(plan.planned_date)}）に合わせる`}
             </button>
             <button
               onClick={() => setSection(null)}
@@ -300,7 +352,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
         {/* ── 日程変更フォーム ── */}
         {isActionable && section === 'editDate' && (
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">新しい予定日</label>
+            <label className="block text-sm font-medium text-gray-700">新しい計画日</label>
             <input
               type="date"
               value={editDate}
@@ -328,24 +380,39 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
         {/* ── 削除セクション ── */}
         {section === 'delete' && (
           <div className="space-y-2">
-            <p className="text-xs text-gray-400 text-center mb-3">削除方法を選んでください</p>
-            <button
-              onClick={() => run(() => deletePlan(plan.id))}
-              disabled={loading}
-              className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
-            >
-              この計画だけ削除
-            </button>
-            <button
-              onClick={() => run(() => deleteSeriesPlanned(plan.series_id, plan.planned_date))}
-              disabled={loading}
-              className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
-            >
-              以降の計画をすべて削除
-              <span className="block text-xs font-normal text-gray-400 mt-0.5">
-                実施済みの記録は残ります
-              </span>
-            </button>
+            {isActionable ? (
+              <>
+                <p className="text-xs text-gray-400 text-center mb-3">削除方法を選んでください</p>
+                <button
+                  onClick={() => run(() => deletePlan(plan.id))}
+                  disabled={loading}
+                  className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  この計画だけ削除
+                </button>
+                <button
+                  onClick={() => run(() => deleteSeriesPlanned(plan.series_id, plan.planned_date))}
+                  disabled={loading}
+                  className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  以降の計画をすべて削除
+                  <span className="block text-xs font-normal text-gray-400 mt-0.5">
+                    実施済みの記録は残ります
+                  </span>
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 text-center mb-3">この記録を削除しますか？</p>
+                <button
+                  onClick={() => run(() => deletePlan(plan.id))}
+                  disabled={loading}
+                  className="w-full border border-red-200 text-red-500 text-sm font-medium py-2.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  {loading ? '削除中...' : '削除する'}
+                </button>
+              </>
+            )}
             <button
               onClick={() => setSection(null)}
               className="w-full text-xs text-gray-400 hover:text-gray-600 transition-colors py-1"
@@ -356,7 +423,7 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
         )}
 
         {/* ── 実施済み・スキップ済みの表示 ── */}
-        {!isActionable && (
+        {!isActionable && section === null && (
           <div className="space-y-3 py-1">
             {plan.status === 'completed' ? (
               <>
@@ -370,39 +437,84 @@ export function PlanModal({ plan, onClose, onUpdated }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">金額（任意）</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">金額</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">¥</span>
                     <input
                       type="number"
                       min="0"
                       value={amountStr}
-                      onChange={e => setAmountStr(e.target.value)}
+                      onChange={e => { setAmountStr(e.target.value); setAmountErr(null) }}
                       placeholder="例：15000"
-                      className="w-full border border-border-pink rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className={`w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${amountErr ? 'border-red-400' : 'border-border-pink'}`}
+                    />
+                  </div>
+                  {amountErr && (
+                    <p className="text-xs text-red-500 mt-1">{amountErr}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">部位（任意）</label>
+                    <input
+                      type="text"
+                      value={bodyPart}
+                      onChange={e => setBodyPart(e.target.value)}
+                      placeholder="例：額、目尻"
+                      className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">単位数（任意）</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={unitsStr}
+                      onChange={e => setUnitsStr(e.target.value)}
+                      placeholder="例：20"
+                      className="w-full border border-border-pink rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
                 <button
-                  onClick={() => run(() => updateCompletedPlan(
-                    plan.id,
-                    editCompletedDate,
-                    amountStr !== '' ? parseInt(amountStr, 10) : null
-                  ))}
+                  onClick={() => {
+                    if (!amountStr) { setAmountErr('金額を入力してください'); return }
+                    run(() => updateCompletedPlan(
+                      plan.id,
+                      editCompletedDate,
+                      parseInt(amountStr, 10),
+                      bodyPart || null,
+                      unitsStr ? parseInt(unitsStr, 10) : null,
+                    ))
+                  }}
                   disabled={loading || !editCompletedDate}
                   className="w-full bg-primary text-white font-medium py-2.5 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-60"
                 >
                   {loading ? '保存中...' : '保存する'}
                 </button>
+                <button
+                  onClick={() => setSection('delete')}
+                  className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors py-1"
+                >
+                  削除する ›
+                </button>
               </>
             ) : (
-              <p className="text-center text-sm text-gray-400">スキップ済み</p>
+              <>
+                <p className="text-center text-sm text-gray-400">スキップ済み</p>
+                <button
+                  onClick={() => setSection('delete')}
+                  className="w-full text-xs text-gray-400 hover:text-red-400 transition-colors py-1"
+                >
+                  削除する ›
+                </button>
+              </>
             )}
           </div>
         )}
 
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="mt-4 w-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           閉じる

@@ -26,6 +26,9 @@ export function AnnualView() {
   const byMonth      = groupByMonth(plans)
   const totalPlanned = plans.filter(p => p.status === 'planned').length
   const totalDone    = plans.filter(p => p.status === 'completed').length
+  const totalAmount  = plans
+    .filter(p => p.status === 'completed' && p.amount != null)
+    .reduce((sum, p) => sum + p.amount!, 0)
 
   function go(y: number) {
     router.push(`/annual?year=${y}`)
@@ -36,10 +39,15 @@ export function AnnualView() {
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-primary">{year}年 年間計画</h2>
+          <h2 className="text-2xl font-bold text-primary">{year}年 サマリー</h2>
           {!loading && (
             <p className="text-sm text-gray-400 mt-0.5">
               計画中 {totalPlanned}件 / 実施済 {totalDone}件
+              {totalDone > 0 && (
+                <span className="ml-2 font-semibold text-primary">
+                  合計 ¥{totalAmount.toLocaleString()}
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -71,6 +79,10 @@ export function AnnualView() {
           const monthPlans    = byMonth[m] ?? []
           const isCurrentMonth = year === now.getFullYear() && m === now.getMonth() + 1
           const isPast         = year < now.getFullYear() || (year === now.getFullYear() && m < now.getMonth() + 1)
+          const monthAmount    = monthPlans
+            .filter(p => p.status === 'completed' && p.amount != null)
+            .reduce((sum, p) => sum + p.amount!, 0)
+          const hasCompleted   = monthPlans.some(p => p.status === 'completed')
 
           return (
             <Link
@@ -84,9 +96,14 @@ export function AnnualView() {
                 <p className={`font-semibold ${isCurrentMonth ? 'text-primary' : 'text-gray-700'}`}>
                   {m}月
                 </p>
-                {monthPlans.length > 0 && (
-                  <span className="text-xs text-gray-400">{monthPlans.length}件</span>
-                )}
+                <div className="text-right">
+                  {monthPlans.length > 0 && (
+                    <span className="text-xs text-gray-400">{monthPlans.length}件</span>
+                  )}
+                  {hasCompleted && (
+                    <p className="text-xs font-medium text-primary">¥{monthAmount.toLocaleString()}</p>
+                  )}
+                </div>
               </div>
 
               {loading ? (

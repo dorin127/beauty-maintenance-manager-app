@@ -70,6 +70,8 @@ type PlanRow = {
   planned_date: string
   interval_months: number
   notes: string | null
+  body_part: string | null
+  units: number | null
   series_id: string
   status: 'planned'
   completed_date: null
@@ -81,35 +83,36 @@ type PlanRow = {
  */
 export function generateSeriesPlans(input: NewPlanInput, seriesId?: string) {
   const sid = seriesId ?? crypto.randomUUID()
-  const cutoff = addMonths(new Date(), 12)
   const plans: PlanRow[] = []
   const startDate = parseDate(input.planned_date)
 
+  const makePlan = (date: Date): PlanRow => ({
+    menu_id:         input.menu_id,
+    menu_name:       input.menu_name,
+    planned_date:    formatDate(date),
+    interval_months: input.interval_months,
+    notes:           input.notes ?? null,
+    body_part:       input.body_part ?? null,
+    units:           input.units ?? null,
+    series_id:       sid,
+    status:          'planned',
+    completed_date:  null,
+  })
+
+  // interval 0 = 定期なし（単発1件のみ）
+  if (input.interval_months === 0) {
+    plans.push(makePlan(startDate))
+    return { plans, seriesId: sid }
+  }
+
+  const cutoff = addMonths(new Date(), 12)
   let step = 0
   let current = startDate
-
   while (current <= cutoff) {
-    plans.push({
-      menu_id:         input.menu_id,
-      menu_name:       input.menu_name,
-      planned_date:    formatDate(current),
-      interval_months: input.interval_months,
-      notes:           input.notes ?? null,
-      series_id:       sid,
-      status:          'planned',
-      completed_date:  null,
-    })
+    plans.push(makePlan(current))
     step++
     current = calcNextWeekdayAligned(startDate, input.interval_months * step)
   }
 
   return { plans, seriesId: sid }
-}
-
-/**
- * 実施完了時に次回日程を計算する。
- * 実施日の曜日・月内ポジションを揃えて返す。
- */
-export function calcNextDate(completedDate: Date, intervalMonths: number): Date {
-  return calcNextWeekdayAligned(completedDate, intervalMonths)
 }

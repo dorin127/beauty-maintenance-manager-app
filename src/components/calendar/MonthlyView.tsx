@@ -1,9 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useMonthlyPlans } from '@/hooks/usePlans'
-import { useMenus } from '@/hooks/useMenus'
+import { useMonthlyPlans, useUnpricedPlans } from '@/hooks/usePlans'
 import { CalendarGrid } from './CalendarGrid'
 import { PlanModal } from '@/components/maintenance/PlanModal'
 import { MaintenanceForm } from '@/components/forms/MaintenanceForm'
@@ -24,42 +23,24 @@ export function MonthlyView() {
   const [inputDate, setInputDate]               = useState<string | null>(null)
   const [showMenuManage, setShowMenuManage]     = useState(false)
   const [showClinicManage, setShowClinicManage] = useState(false)
-  const { plans, loading, refetch } = useMonthlyPlans(year, month)
-  const { menus }                   = useMenus()
+  const { plans, loading, refetch }             = useMonthlyPlans(year, month)
+  const { plans: unpricedPlans, refetch: refetchUnpriced } = useUnpricedPlans()
 
   function go(y: number, m: number) {
     router.push(`/monthly?year=${y}&month=${m}`)
   }
 
-  // 同日に禁止処理の組み合わせがある日をセットで返す
-  const conflictDays = useMemo(() => {
-    const result = new Set<number>()
-    const plansByDay = plans.reduce<Record<number, MaintenancePlan[]>>((acc, plan) => {
-      const day = parseInt(plan.planned_date.split('-')[2])
-      ;(acc[day] ??= []).push(plan)
-      return acc
-    }, {})
 
-    for (const [dayStr, dayPlans] of Object.entries(plansByDay)) {
-      for (const plan of dayPlans) {
-        const menu = menus.find(m => m.id === plan.menu_id || m.name === plan.menu_name)
-        if (!menu?.prohibited_with.length) continue
-        const otherNames = dayPlans.filter(p => p.id !== plan.id).map(p => p.menu_name)
-        if (menu.prohibited_with.some(p => otherNames.includes(p))) {
-          result.add(parseInt(dayStr))
-        }
-      }
-    }
-    return result
-  }, [plans, menus])
-
-  const skipped   = plans.filter(p => p.status === 'skipped').length
   const counts = {
     planned:   plans.filter(p => p.status === 'planned').length,
     reserved:  plans.filter(p => p.status === 'reserved').length,
     completed: plans.filter(p => p.status === 'completed').length,
-    skipped,
+    skipped:   plans.filter(p => p.status === 'skipped').length,
   }
+
+  const totalAmount = plans
+    .filter(p => p.status === 'completed' && p.amount != null)
+    .reduce((sum, p) => sum + p.amount!, 0)
 
   return (
     <>
@@ -113,38 +94,58 @@ export function MonthlyView() {
                 plans={plans}
                 onPlanClick={setSelectedPlan}
                 onDayClick={setInputDate}
-                conflictDays={conflictDays}
               />
             </>
           )}
         </div>
 
         {/* 凡例 */}
-        <div className="flex items-center justify-between mt-3 px-1">
-          <div className="flex gap-2 flex-wrap">
-            {(['planned', 'reserved', 'completed', 'skipped'] as const).map(s => (
-              <StatusBadge key={s} status={s} count={counts[s]} />
-            ))}
-            {conflictDays.size > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-amber-600 bg-amber-50">
-                ⚠ 禁止処理の競合
+        <div className="mt-3 px-1 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2 flex-wrap">
+              {(['planned', 'reserved', 'completed', 'skipped'] as const).map(s => (
+                <StatusBadge key={s} status={s} count={counts[s]} />
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowMenuManage(true)}
+                className="text-xs text-gray-500 hover:text-primary transition-colors"
+              >
+                メニュー管理 ›
+              </button>
+              <button
+                onClick={() => setShowClinicManage(true)}
+                className="text-xs text-gray-500 hover:text-primary transition-colors"
+              >
+                クリニック管理 ›
+              </button>
+            </div>
+          </div>
+          {counts.completed > 0 && (
+            <p className="text-sm text-gray-600">
+              今月の実施合計：
+              <span className="font-semibold text-primary">
+                ¥{totalAmount.toLocaleString()}
               </span>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowMenuManage(true)}
-              className="text-xs text-gray-500 hover:text-primary transition-colors"
-            >
-              メニュー管理 ›
-            </button>
-            <button
-              onClick={() => setShowClinicManage(true)}
-              className="text-xs text-gray-500 hover:text-primary transition-colors"
-            >
-              クリニック管理 ›
-            </button>
-          </div>
+            </p>
+          )}
+          {unpricedPlans.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <p className="text-xs text-amber-700 font-medium mb-1.5">金額が未入力の施術があります。タップして入力してください。</p>
+              <div className="flex flex-wrap gap-1.5">
+                {unpricedPlans.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedPlan(p)}
+                    className="text-xs bg-white border border-amber-300 text-amber-800 rounded-full px-2.5 py-0.5 hover:bg-amber-100 transition-colors"
+                  >
+                    {p.menu_name}（{p.planned_date.slice(5).replace('-', '/')}）
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
@@ -153,7 +154,7 @@ export function MonthlyView() {
         key={selectedPlan?.id}
         plan={selectedPlan}
         onClose={() => setSelectedPlan(null)}
-        onUpdated={refetch}
+        onUpdated={() => { refetch(); refetchUnpriced() }}
       />
 
       {showMenuManage && (
