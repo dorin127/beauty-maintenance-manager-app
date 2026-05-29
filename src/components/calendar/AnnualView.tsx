@@ -35,13 +35,13 @@ export function AnnualView() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-6">
+    <div className="max-w-5xl mx-auto py-4 sm:py-8 px-3 sm:px-6">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-primary">{year}年 サマリー</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-primary whitespace-nowrap">{year}年 サマリー</h2>
           {!loading && (
-            <p className="text-sm text-gray-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
               計画中 {totalPlanned}件 / 実施済 {totalDone}件
               {totalDone > 0 && (
                 <span className="ml-2 font-semibold text-primary">
@@ -51,22 +51,22 @@ export function AnnualView() {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <button
             onClick={() => go(year - 1)}
-            className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
+            className="px-2 sm:px-4 py-1.5 sm:py-2 border border-border-pink rounded-lg text-xs sm:text-sm whitespace-nowrap hover:bg-primary-light transition-colors"
           >
             ＜ 前年
           </button>
           <button
             onClick={() => go(now.getFullYear())}
-            className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
+            className="px-2 sm:px-4 py-1.5 sm:py-2 border border-border-pink rounded-lg text-xs sm:text-sm whitespace-nowrap hover:bg-primary-light transition-colors"
           >
             今年
           </button>
           <button
             onClick={() => go(year + 1)}
-            className="px-4 py-2 border border-border-pink rounded-lg text-sm hover:bg-primary-light transition-colors"
+            className="px-2 sm:px-4 py-1.5 sm:py-2 border border-border-pink rounded-lg text-xs sm:text-sm whitespace-nowrap hover:bg-primary-light transition-colors"
           >
             次年 ＞
           </button>
@@ -74,7 +74,7 @@ export function AnnualView() {
       </div>
 
       {/* 12ヶ月グリッド */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
         {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
           const monthPlans    = byMonth[m] ?? []
           const isCurrentMonth = year === now.getFullYear() && m === now.getMonth() + 1
@@ -88,7 +88,7 @@ export function AnnualView() {
             <Link
               key={m}
               href={`/monthly?year=${year}&month=${m}`}
-              className={`bg-white rounded-xl border p-4 hover:shadow-sm transition-shadow block ${
+              className={`bg-white rounded-xl border p-2 sm:p-4 hover:shadow-sm transition-shadow block ${
                 isCurrentMonth ? 'border-primary border-2' : 'border-border-pink'
               } ${isPast && !isCurrentMonth ? 'opacity-70' : ''}`}
             >
